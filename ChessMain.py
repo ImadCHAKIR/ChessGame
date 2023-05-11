@@ -4,6 +4,7 @@
 
 import pygame as p
 import ChessEngine
+import ChessMove
 
 Width = Height = 512
 Dimension = 8
@@ -27,7 +28,6 @@ def main():
     moveMade = False
     loadImages()
     running = True
-    sqSelected =()
     playerClicks = []
     
     while running: 
@@ -38,23 +38,23 @@ def main():
                 location = p.mouse.get_pos()
                 col = int(location[0]//SQ_Size)
                 row = int(location[1]//SQ_Size)
-                
-                if gs.board[row][col] =="--" and  sqSelected == ():
+                turn = 'w' if gs.whiteToMove else 'b'
+                if gs.board[row][col][0] != turn and  gs.sqSelected == ():
                     continue
                 
-                if sqSelected == (row,col):
-                    sqSelected = ()
+                if gs.sqSelected == (row,col):
+                    gs.sqSelected = ()
                     playerClicks = []
                 else:
-                    sqSelected = (row, col)
-                    playerClicks.append(sqSelected)
+                    gs.sqSelected = (row, col)
+                    playerClicks.append(gs.sqSelected)
                     
                 if len(playerClicks) == 2:
-                    move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    move = ChessMove.Move(playerClicks[0], playerClicks[1], gs.board)
                     if move in validMoves:
                         gs.makeMove(move)
                         moveMade = True
-                    sqSelected = ()
+                    gs.sqSelected = ()
                     playerClicks = []
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_z:
@@ -71,7 +71,10 @@ def main():
         
 def drawGameState(screen,gs):
     drawBoard(screen)
+    if gs.sqSelected:
+        p.draw.rect(screen, p.Color('green'), p.Rect(gs.sqSelected[1]*SQ_Size,gs.sqSelected[0]*SQ_Size,SQ_Size,SQ_Size ))
     drawPieces(screen,gs.board)
+    
 
 def drawBoard(screen):
     colors = [p.Color("white"),p.Color("gray")]
