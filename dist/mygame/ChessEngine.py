@@ -3,29 +3,18 @@
 # determining the valid move of the current state 
 
 import ChessMove
-import pygame as p
 
 class GameState():
     def __init__(self):
-        # self.board = [
-        #     ["bR","bN","bB","bQ","bK","bB","bN","bR"],
-        #     ["bp","bp","bp","bp","bp","bp","bp","bp"],
-        #     ["--","--","--","--","--","--","--","--"],
-        #     ["--","--","--","--","--","--","--","--"],
-        #     ["--","--","--","--","--","--","--","--"],
-        #     ["--","--","--","--","--","--","--","--"],
-        #     ["wp","wp","wp","wp","wp","wp","wp","wp"],
-        #     ["wR","wN","wB","wQ","wK","wB","wN","wR"]
-        # ]
         self.board = [
-            ["bR","bN","bB","--","bK","bB","bN","--"],
-            ["bp","bp","bp","bp","bp","bp","bp","wp"],
-            ["--","--","--","--","--","bQ","--","--"],
+            ["bR","bN","bB","bQ","bK","bB","bN","bR"],
+            ["bp","bp","bp","bp","bp","bp","bp","bp"],
             ["--","--","--","--","--","--","--","--"],
             ["--","--","--","--","--","--","--","--"],
             ["--","--","--","--","--","--","--","--"],
-            ["wp","wp","wp","wp","wp","--","wp","wp"],
-            ["wR","wN","wB","wQ","wK","--","--","wR"]
+            ["--","--","--","--","--","--","--","--"],
+            ["wp","wp","wp","wp","wp","wp","wp","wp"],
+            ["wR","wN","wB","wQ","wK","wB","wN","wR"]
         ]
         self.moveFunctions = { 'p': self.getPawnMoves, 'R': self.getRookMoves,
                                 'Q': self.getQueenMoves , 'K':self.getKingMoves,
@@ -38,8 +27,8 @@ class GameState():
         self.inCheck = False
         self.pins = []
         self.checks = []
-        self.blackCastling = [True,True]
-        self.whiteCastling = [True,True]
+        self.blackCastling = (True,True)
+        self.whiteCastling = (True,True)
     
     def makeMove(self, move):
         self.board[move.startRow][move.startCol] = "--"
@@ -47,33 +36,19 @@ class GameState():
         self.moveLog.append(move)
         
         if move.pieceMoved[1] == 'p' and move.pieceCaptured == "--" and move.startCol != move.endCol:
-            self.board[move.startRow][move.endCol] = "--"            
+            self.board[move.startRow][move.endCol] = "--"
             
-        if move.pieceMoved[1]=='K':                
+        if move.pieceMoved[1]=='K':
             if abs(move.startCol - move.endCol)==2:
-
-                self.board[move.endRow][3 if move.endCol<4 else 5] = move.pieceMoved[0] + 'R'
                 self.board[move.startRow][0 if move.endCol<4 else 7] = "--"
-                
-                inCheck, _ , _ = self.checkForPinsAndChecks((move.endRow, (move.endCol+move.startCol)//2) )
+                self.board[move.endRow][3 if move.endCol<4 else 5] = move.pieceMoved[0] + 'R'
             
-                if inCheck:
-                    self.undoMove()
-                    self.whiteCastling = [True,True]
-                else:
-                    if self.whiteToMove:
-                        self.whiteKingLocation = (move.endRow, move.endCol) 
-                        self.whiteCastling = [False,False]
-                    else:
-                        self.blackKingLocation = (move.endRow, move.endCol) 
-                        self.blackCastling = [False,False]                                        
+            if self.whiteToMove: 
+                self.whiteKingLocation = (move.endRow, move.endCol) 
+                self.whiteCastling = (False,False)
             else: 
-                if self.whiteToMove:
-                    self.whiteKingLocation = (move.endRow, move.endCol) 
-                    self.whiteCastling = [False,False]
-                else:
-                    self.blackKingLocation = (move.endRow, move.endCol) 
-                    self.blackCastling = [False,False]
+                self.blackKingLocation = (move.endRow, move.endCol) 
+                self.blackCastling = (False,False)
             
         if move.pieceMoved[1]=='R':
             if move.startCol in [0,7]:
@@ -81,20 +56,7 @@ class GameState():
                     self.whiteCastling[move.startCol//7]= False
                 else:
                     self.blackCastling[move.startCol//7]= False
-                                    
-        if move.pieceMoved[1]=='p' and ((self.whiteToMove and move.endRow == 0) or (not self.whiteToMove and move.endRow == 7)):
-            self.board[move.endRow][move.endCol] = move.pieceMoved[0] + 'Q'                    
-        
-        if  self.whiteToMove: 
-            isCheck, _ , _ = self.checkForPinsAndChecks(self.whiteKingLocation)
-            if isCheck:
-                self.undoMove()
-        else:
-            isCheck, _ , _ = self.checkForPinsAndChecks(self.blackKingLocation)
-            if isCheck:
-                self.undoMove()
-        
-        print(self.whiteKingLocation,self.blackKingLocation)
+                                      
         self.whiteToMove= not self.whiteToMove 
               
     def undoMove(self):
@@ -102,22 +64,22 @@ class GameState():
             move = self.moveLog.pop()
             self.board[move.startRow][move.startCol] = move.pieceMoved
             self.board[move.endRow][move.endCol] = move.pieceCaptured
-             
+            self.whiteToMove= not self.whiteToMove 
             
             if move.pieceMoved[1] == 'p' and move.pieceCaptured == "--" and move.startCol != move.endCol:
                 self.board[move.startRow][move.endCol] = ('b' if self.whiteToMove else 'w')  + 'p'
             
+            if abs(move.startCol - move.endCol)==2:
+                self.board[move.startRow][0 if move.endCol<4 else 7] = move.pieceMoved[0] + 'R'
+                self.board[move.endRow][3 if move.endCol<4 else 5] = "--"
+            
             if move.pieceMoved[1]=='K':
-                if abs(move.startCol - move.endCol)==2:
-                    self.board[move.startRow][0 if move.endCol<4 else 7] = move.pieceMoved[0] + 'R'
-                    self.board[move.endRow][3 if move.endCol<4 else 5] = "--" 
-                    
                 if self.whiteToMove: 
                     self.whiteKingLocation = (move.startRow, move.startCol) 
-                    self.whiteCastling = [True,True]
+                    self.whiteCastling = (True,True)
                 else: 
                     self.blackKingLocation = (move.startRow, move.startCol)
-                    self.blackCastling = [True,True]          
+                    self.blackCastling = (True,True)          
             
             if move.pieceMoved[1]=='R':
                 if move.startCol in [0,7]:
@@ -126,10 +88,9 @@ class GameState():
                     else:
                         self.blackCastling[move.startCol//7]= True
                         
-            self.whiteToMove= not self.whiteToMove
-                        
     def getValidMoves(self):
         moves = []
+        self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks()
         
         if self.whiteToMove:
             kingRow = self.whiteKingLocation[0]
@@ -137,9 +98,7 @@ class GameState():
         else:
             kingRow = self.blackKingLocation[0]
             kingCol = self.blackKingLocation[1]
-        
-        self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks((kingRow,kingCol))    
-        
+            
         if self.inCheck:
             if len(self.checks) == 1:
                 moves =self.getAllPossibleMoves()
@@ -164,10 +123,7 @@ class GameState():
                             moves.remove(moves[i])
                     else:
                         if not (moves[i].endRow, moves[i].endCol) in validSquares:
-                            moves.remove(moves[i])  
-                
-                if  kingRow + check[2] == check[0] and kingCol + check[3] == check[1]:
-                    moves.append(ChessMove.Move((kingRow,kingCol),(check[0],check[1]),self.board))    
+                            moves.remove(moves[i])          
             else:
                 self.getKingMoves(kingRow, kingCol, moves)
         else:
@@ -175,20 +131,21 @@ class GameState():
         
         return moves
     
-    def checkForPinsAndChecks(self,position):
-        pins = []   
+    def checkForPinsAndChecks(self):
+        pins = []
         checks = []
         inCheck = False
         
         if self.whiteToMove:
             ennemyColor = "b"
             allyColor = "w"
+            startRow = self.whiteKingLocation[0]
+            startCol = self.whiteKingLocation[1]
         else:   
             ennemyColor = "w"
             allyColor = "b"
-
-        startRow = position[0]
-        startCol = position[1]
+            startRow = self.blackKingLocation[0]
+            startCol = self.blackKingLocation[1]
             
         directions = ((0,1),(0,-1),(-1,0),(1,0),(-1,-1),(-1,1),(1,-1),(1,1))
         for j in range(len(directions)):
@@ -334,3 +291,4 @@ class GameState():
     def getQueenMoves(self,r,c,moves):
         self.getBishopMoves(r,c,moves)
         self.getRookMoves(r,c,moves)
+    

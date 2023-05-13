@@ -11,16 +11,23 @@ Dimension = 8
 SQ_Size = Height/Dimension
 Max_FPS = 15
 Images = {}
-
+import sys
+import os
+    
 def loadImages():
     pieces = ["bp","bR","bN","bB","bQ","bK","wp","wR","wN","wB","wQ","wK"]
     for piece in pieces:
-        Images[piece] = p.transform.scale(p.image.load("./images/" +piece+".png"),(SQ_Size,SQ_Size))
-        
-        
+        if hasattr(sys, '_MEIPASS'):
+            # Running from PyInstaller bundle
+            image_path = os.path.join(sys._MEIPASS, 'images', piece+'.png')
+        else:
+            # Running from source code
+            image_path = './images/'+piece+".png"
+        Images[piece] = p.transform.scale(p.image.load(image_path),(SQ_Size,SQ_Size))
+            
 def main():
     p.init()
-    screen = p.display.set_mode((Width,Height))
+    screen = p.display.set_mode((Width+100,Height))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     gs = ChessEngine.GameState()
@@ -29,7 +36,7 @@ def main():
     loadImages()
     running = True
     playerClicks = []
-    
+
     while running: 
         for e in p.event.get():
             if e.type == p.QUIT:
@@ -39,6 +46,7 @@ def main():
                 col = int(location[0]//SQ_Size)
                 row = int(location[1]//SQ_Size)
                 turn = 'w' if gs.whiteToMove else 'b'
+                
                 if gs.board[row][col][0] != turn and  gs.sqSelected == ():
                     continue
                 
@@ -51,6 +59,8 @@ def main():
                     
                 if len(playerClicks) == 2:
                     move = ChessMove.Move(playerClicks[0], playerClicks[1], gs.board)
+        
+                                
                     if move in validMoves:
                         gs.makeMove(move)
                         moveMade = True
@@ -72,7 +82,7 @@ def main():
 def drawGameState(screen,gs):
     drawBoard(screen)
     if gs.sqSelected:
-        p.draw.rect(screen, p.Color('green'), p.Rect(gs.sqSelected[1]*SQ_Size,gs.sqSelected[0]*SQ_Size,SQ_Size,SQ_Size ))
+        p.draw.rect( screen, p.Color('green'), p.Rect(gs.sqSelected[1]*SQ_Size, gs.sqSelected[0]*SQ_Size, SQ_Size, SQ_Size ))
     drawPieces(screen,gs.board)
     
 
@@ -93,6 +103,7 @@ def drawPieces(screen, board):
 
 if __name__ == "__main__":
     main()
+    
 
     
     
